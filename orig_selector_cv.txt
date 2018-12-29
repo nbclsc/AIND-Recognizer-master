@@ -1,0 +1,51 @@
+        split_method = KFold()
+        n_components = len(self.sequences)
+        ll_max, model_best = None, None
+        # use cv when possible
+        if n_components > 2:
+            # Using the default of 3 splits.
+            for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+                train_X, train_len = combine_sequences(cv_train_idx,
+                                                       self.sequences)
+                test_X, test_len = combine_sequences(cv_test_idx,
+                                                     self.sequences)
+                self.X = train_X
+                self.lengths = train_len
+                for x in range(self.min_n_components, self.max_n_components+1):
+                    model_fit = self.base_model(x)
+                    try:
+                        # get the score for the cv model
+                        log_like = model_fit.score(test_X, test_len)
+                        if ll_max is None or ll_max < log_like:
+                            ll_max = log_like
+                            model_best = model_fit
+                    except:
+                        pass
+            return model_best
+        # Use all data for the fit and score when cv isn't possible.
+        for x in range(self.min_n_components, self.max_n_components + 1):
+            model_fit = self.base_model(x)
+            try:
+                log_like = model_fit.score(self.X, self.lengths)
+                if ll_max is None or ll_max < log_like:
+                    ll_max = log_like
+                    model_best = model_fit
+            except:
+                pass
+        return model_best
+        
+        
+        # print(asl.df.head())
+# print(asl.df.info())
+
+# Area between the two hands and the nose.
+# test = asl.df.copy()
+# test['a'] = test.groupby(level=0)['right-x'].shift(2)
+# test['b'] = test['right-x'] - test['a']
+# test['x-y-nose-area'] = 0.5*test['diff-x']*(test['right-y']+(test['diff-y']/test['diff-x'])*(test['diff-x']-test['right-x']))
+# test['x-y-nose-area'] = np.where((test['right-x'] < test['left-x']) & (test['right-y'] < test['nose-y']) & (test['left-y'] > test['nose-y']), 0.5*(test['left-x']-test['right-x'])*
+#                                  (test['right-y']+((test['left-y']-test['right-y'])/(test['left-x']-test['right-x']))*((test['left-x']-test['right-x'])-test['right-x']))
+#                                 0.5*(test['right-x']-test['left-x'])*
+#                                  (test['left-y']+((test['right-y']-test['left-y'])/(test['right-x']-test['left-x']))*((test['right-x']-test['left-x'])-test['left-x'])))
+# print(test.describe())
+#print(test)
